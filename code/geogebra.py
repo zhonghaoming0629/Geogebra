@@ -68,18 +68,23 @@ class GeoGebra:
                     ui = self.search_nearest_object(pos, self.ui)
                     if ui:
                         self.choose_obj = ui.get_name()
-                    # 如果点击了一个可选择的对象，设置为当前选择，并将其添加到选择历史记录中
-                    if obj:
-                        if obj not in self.select_memory:
-                            self.select_memory.append(obj)
-                        self.select = obj
-                        self.select.set_drag()
-                    # 如果没有点击到任何可选择的对象，清空选择历史记录，并准备拖动背景
-                    else: 
-                        self.select_memory.clear()
-                        self.drag_bg_pos = self.pos.copy()
-                        self.drag_mouse_screen_pos = pygame.Vector2(pygame.mouse.get_pos())
-                        self.move_background = True 
+                    if self.select:
+                        if self.select == obj:
+                            self.select.set_drag()
+                            self.select = None
+                        else:
+                            # 如果点击了一个可选择的对象，设置为当前选择，并将其添加到选择历史记录中
+                            if obj:
+                                if  obj not in self.select_memory:
+                                    self.select_memory.append(obj)
+                                    self.select = obj
+                                    self.select.set_drag()
+                                # 如果没有点击到任何可选择的对象，清空选择历史记录，并准备拖动背景
+                                else: 
+                                    self.select_memory.clear()
+                                    self.drag_bg_pos = self.pos.copy()
+                                    self.drag_mouse_screen_pos = pygame.Vector2(pygame.mouse.get_pos())
+                                    self.move_background = True 
                     if self.choose_obj:
                         x, y = pygame.mouse.get_pos()
                         if not self.select_bg.rect.collidepoint(x, y):
@@ -88,7 +93,7 @@ class GeoGebra:
                             elif self.choose_obj == Dot.__name__:
                                 self.create_Dot(pos)
                             elif self.choose_obj == Line.__name__:
-                                self.create_Line()
+                                self.create_Line(pos)
             # 处理鼠标松开事件                                      
             elif event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1: # 鼠标左键松开
@@ -154,24 +159,29 @@ class GeoGebra:
         text = self.dot_num()
         dot = Dot(self.all_sprites, text, pos, pygame.Color("blue"))
     
-    def create_Line(self):
+    def create_Line(self, pos):
         '''
         创建一条线
         
         '''
         log('Create a line')
-        dot = None
-        if isinstance(self.select, Dot):
-            for idx in reversed(range(len(self.select_memory))):
-                obj = self.select_memory[idx]
-                if isinstance(obj, Dot) and obj != self.select:
-                    if dot:
-                        self.select_memory.remove(obj)
-                    else:
-                        dot = obj
-                        self.select_memory.remove(obj)
-            if dot:
-                self.select.connect(dot)
+        if not isinstance(self.select, Dot):
+            dot1 = self.select
+        else:
+            dot1 = self.create_Dot(pos)
+        
+
+        dot2 = None
+        for idx in reversed(range(len(self.select_memory))):
+            obj = self.select_memory[idx]
+            if isinstance(obj, Dot) and obj != self.select:
+                if dot2:
+                    self.select_memory.remove(obj)
+                else:
+                    dot2 = obj
+                    self.select_memory.remove(obj)
+        if dot2:
+            dot1.connect(dot)
 
     def get_mouse_pos(self):
         pos = pygame.Vector2(pygame.mouse.get_pos()) + self.pos
