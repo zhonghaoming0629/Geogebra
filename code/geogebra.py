@@ -20,7 +20,7 @@ class GeoGebra:
         # 是否正在拖动背景的标志
         self.move_background = False
         # 创建一个精灵组来管理所有的精灵对象
-        self.all_sprites = pygame.sprite.Group()
+        self.all_sprites = CameraGroup(self.screen)
         # 选择背景相关变量
         self.select_height = SELECT_BG_HEIGHT[1]
         # 创建选择背景对象，并将其添加到精灵组中
@@ -64,27 +64,31 @@ class GeoGebra:
             # 处理鼠标按下事件
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:  # 鼠标左键按下
+                    # 寻找鼠标点击最近的对象和ui
                     obj = self.search_nearest_object(pos, self.lb)
                     ui = self.search_nearest_object(pos, self.ui)
+                    # 如果ui有值，设置选择对象为ui名称
                     if ui:
                         self.choose_obj = ui.get_name()
+                    # 如果当前已经有选择对象，并且点击的对象是当前选择对象，则取消选择并准备拖动背景
                     if self.select:
                         if self.select == obj:
                             self.select.set_drag()
-                            self.select = None
-                        else:
-                            # 如果点击了一个可选择的对象，设置为当前选择，并将其添加到选择历史记录中
-                            if obj:
-                                if  obj not in self.select_memory:
-                                    self.select_memory.append(obj)
-                                    self.select = obj
-                                    self.select.set_drag()
-                                # 如果没有点击到任何可选择的对象，清空选择历史记录，并准备拖动背景
-                                else: 
-                                    self.select_memory.clear()
-                                    self.drag_bg_pos = self.pos.copy()
-                                    self.drag_mouse_screen_pos = pygame.Vector2(pygame.mouse.get_pos())
-                                    self.move_background = True 
+                        self.select = None
+                    else:
+                        # 如果点击了一个可选择的对象，设置为当前选择，并将其添加到选择历史记录中
+                        if obj:
+                            if  obj not in self.select_memory:
+                                self.select_memory.append(obj)
+                                self.select = obj
+                                self.select.set_drag()
+                            # 如果没有点击到任何可选择的对象，清空选择历史记录，并准备拖动背景
+                        else: 
+                            self.select_memory.clear()
+                            self.drag_bg_pos = self.pos.copy()
+                            self.drag_mouse_screen_pos = pygame.Vector2(pygame.mouse.get_pos())
+                            self.move_background = True 
+                    # 如果当前有选择对象，并且点击的对象不是当前选择对象，则根据当前选择的界面元素类型执行相应的操作，例如创建点或线
                     if self.choose_obj:
                         x, y = pygame.mouse.get_pos()
                         if not self.select_bg.rect.collidepoint(x, y):
@@ -103,11 +107,7 @@ class GeoGebra:
                         self.select = None
                     if self.move_background:    
                         self.move_background = False
-        # 绘制所有精灵对象
-        for sprites in self.all_sprites:
-            if sprites.get_drag():
-                sprites.set_pos(self.get_mouse_pos())
-            sprites.draw(self.screen, self.pos, self.select)
+        self.all_sprites.custom_draw(self.pos, self.select, self.get_mouse_pos())
 
         # 如果正在拖动背景，更新位置
         if self.move_background:
@@ -148,6 +148,7 @@ class GeoGebra:
             text = unicodeit.replace(chr(65 + self.dot_n % 26) + "_" + str(self.dot_n // 26))
         self.dot_n += 1
         return text
+    
 
     def create_Dot(self, pos):
         '''
@@ -158,6 +159,8 @@ class GeoGebra:
         log('Create a dot')
         text = self.dot_num()
         dot = Dot(self.all_sprites, text, pos, pygame.Color("blue"))
+
+        return dot
     
     def create_Line(self, pos):
         '''
@@ -165,7 +168,7 @@ class GeoGebra:
         
         '''
         log('Create a line')
-        if not isinstance(self.select, Dot):
+        if isinstance(self.select, Dot):
             dot1 = self.select
         else:
             dot1 = self.create_Dot(pos)
@@ -175,14 +178,25 @@ class GeoGebra:
         for idx in reversed(range(len(self.select_memory))):
             obj = self.select_memory[idx]
             if isinstance(obj, Dot) and obj != self.select:
-                if dot2:
-                    self.select_memory.remove(obj)
-                else:
+                if not dot2:
                     dot2 = obj
-                    self.select_memory.remove(obj)
+                self.select_memory.remove(obj)
         if dot2:
-            dot1.connect(dot)
+            dot1.connect(dot2)
 
     def get_mouse_pos(self):
         pos = pygame.Vector2(pygame.mouse.get_pos()) + self.pos
         return pos
+
+class CameraGroup(pygame.sprite.Group):
+    def __init__(self, screen):
+        super().__init__()
+        self.screen = screen
+
+    def custom_draw(self, pos, select, mouse_pos):
+        for layer in DRAW_ORDER.values():
+            for sprite in sorted(self.sprites(), key=lambda sprite: sprite.rect.centery):
+                if sprite.z == layer:
+                    if sprite.get_drag():
+                        sprite.set_pos(mouse_pos)
+                    sprite.draw(self.screen, pos, select)

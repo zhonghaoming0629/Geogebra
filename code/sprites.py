@@ -7,11 +7,12 @@ class GeoGebraObject(pygame.sprite.Sprite):
     '''
     所有geogebra对象的基础类
     '''
-    def __init__(self,pos, groups, parents=None):
+    def __init__(self,pos, groups, parents=None, z=DRAW_ORDER['Bg']):
         super().__init__(groups)
         self.pos = pygame.Vector2(pos)
         self.parents = parents
         self.sons = []
+        self.z = z
 
         self.selected_color = SELECTED_COLOR
         self.selected_width = SELECTED_WIDTH
@@ -65,7 +66,7 @@ class GeoGebraUi(GeoGebraObject):
     '''
     GeoGebraUi类，继承自GeoGebraObject，表示界面元素
     '''
-    def __init__(self,pos, groups):
+    def __init__(self,pos, groups, z=DRAW_ORDER['Bg']):
         '''
         初始化GeoGebraUi对象
         
@@ -80,7 +81,7 @@ class SelectBg(GeoGebraUi):
     '''
     选择对象的背景
     '''
-    def __init__(self,pos, height, groups):
+    def __init__(self,pos, height, groups, z=DRAW_ORDER['Bg']):
         '''
         初始化SelectBg对象
         
@@ -88,7 +89,7 @@ class SelectBg(GeoGebraUi):
         :param height: 背景高度
         :param groups: 所属的精灵组
         '''
-        super().__init__(pos, groups)
+        super().__init__(pos, groups, z=z)
         self.image = pygame.Surface((WEIGH, 800 - height))
         self.image.fill(SELECT_BG_COLOR)
         self.rect = self.image.get_rect(topleft=pos)
@@ -138,7 +139,7 @@ class Dot(GeoGebraObject):
     '''
     点
     '''
-    def __init__(self,groups, text, pos, color = pygame.Color("blue")):
+    def __init__(self,groups, text, pos, color = pygame.Color("blue"), z=DRAW_ORDER['Dot']):
         '''
         初始化
         
@@ -148,7 +149,7 @@ class Dot(GeoGebraObject):
         :param pos: 点的初始位置坐标
         :param color: 点的颜色，默认为蓝色
         '''
-        super().__init__(pos, groups)
+        super().__init__(pos, groups, z=z)
         self.color = color
         self.radius = DOT_RADIUS
         self.image = pygame.Surface((self.radius*2,self.radius*2), pygame.SRCALPHA)
@@ -158,6 +159,7 @@ class Dot(GeoGebraObject):
         text_pos = (self.rect.centerx, self.rect.bottom - 10)
         text_obj = Text(text, text_pos, self.color, 18, groups, parents=[self])
         self.sons.append(text_obj)
+
 
     def connect(self,other):
         '''
@@ -171,8 +173,8 @@ class Dot(GeoGebraObject):
         self.sons.append(line_obj)
 
 class Text(GeoGebraObject):
-    def __init__(self, text, pos, color, size, groups, parents=None):
-        super().__init__(pos, groups, parents=parents)
+    def __init__(self, text, pos, color, size, groups, parents=None, z=DRAW_ORDER['Text']):
+        super().__init__(pos, groups, parents=parents, z=z)
         self.text = str(text)
         path = os.path.join(BASIC_PATH, "ttf/JetBrainsMono-Medium.ttf")
         self.font = pygame.font.Font(path, size)
@@ -189,8 +191,8 @@ class Text(GeoGebraObject):
         self.rect = self.image.get_rect(topleft=self.pos)
 
 class Line(GeoGebraObject):
-    def __init__(self, groups, s_pos, e_pos , parents, color = pygame.Color("black")):
-        super().__init__(s_pos, groups, parents)
+    def __init__(self, groups, s_pos, e_pos , parents, color = pygame.Color("black"), z=DRAW_ORDER['Line']):
+        super().__init__(s_pos, groups, parents, z=z)
         self.parent1 = parents[0]
         self.parent2 = parents[1]
         self.color = color
@@ -217,6 +219,32 @@ class Line(GeoGebraObject):
         pygame.draw.line(self.image, self.color, local_s, local_e, self.width)
         
         self.rect = self.image.get_rect(topleft=(min_x, min_y))
+
+    def draw(self, screen, pos, select):
+        self.rebuild()
+        super().draw(screen, pos, select)
+
+class Circle(GeoGebraObject):
+    def __init__(self, groups, center_pos, radius, parents, color = pygame.Color("black"), z=DRAW_ORDER['Line']):
+        super().__init__(center_pos, groups, parents, z=z)
+        self.center_parent = parents[0]
+        self.radius_parent = parents[1]
+        self.color = color
+        self.width = LINE_WIDTH
+        self.can_dragged = False
+
+        self.rebuild()
+
+    def rebuild(self):
+        center_pos = pygame.Vector2(self.center_parent.rect.center)
+        radius = int(pygame.Vector2(self.radius_parent.rect.center).distance_to(center_pos))
+        
+        surface_size = (radius * 2, radius * 2)
+        self.image = pygame.Surface(surface_size, pygame.SRCALPHA)
+
+        pygame.draw.circle(self.image, self.color, (radius, radius), radius, self.width)
+        
+        self.rect = self.image.get_rect(topleft=(center_pos.x - radius, center_pos.y - radius))
 
     def draw(self, screen, pos, select):
         self.rebuild()

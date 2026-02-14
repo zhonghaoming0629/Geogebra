@@ -21,3 +21,10 @@ UI_NUM = len(UI_TEXT)
 SELECTED_COLOR = (0, 255, 255)
 SELECTED_WIDTH = 3
 SELECT_BG_HEIGHT = [0, 600, HEIGHT]
+
+DRAW_ORDER = {
+    'Bg': 0,
+    'Line': 1,
+    'Dot': 2,
+    'Text': 3,
+}
