@@ -116,10 +116,12 @@ class SelectBg(GeoGebraUi):
         生成子类
         
         '''
-        for i, text in enumerate(UI_TEXT):
+        for i in range(len(UI_TEXT)):
+            text = UI_TEXT[i]
+            image = UI_IMAGE[i]
             son_pos = (self.rect.topleft[0] + 50*i, self.rect.topleft[1] + 10)
             son = GeoGebraUi(son_pos, self.groups())
-            basic_image = pygame.image.load(os.path.join(BASIC_PATH, f"img/{text}.png")).convert_alpha()
+            basic_image = pygame.image.load(image).convert_alpha()
             son.image = pygame.transform.scale(basic_image, (50, 50))
             son.rect = son.image.get_rect(topleft=son.pos)
             son.text = text
@@ -176,7 +178,7 @@ class Text(GeoGebraObject):
     def __init__(self, text, pos, color, size, groups, parents=None, z=DRAW_ORDER['Text']):
         super().__init__(pos, groups, parents=parents, z=z)
         self.text = str(text)
-        path = os.path.join(BASIC_PATH, "ttf/JetBrainsMono-Medium.ttf")
+        path = os.path.join(BASIC_PATH, TTF_PATH)
         self.font = pygame.font.Font(path, size)
         self.image = self.font.render(self.text, True, color)
         self.rect = self.image.get_rect(topleft=pos)

@@ -1,4 +1,4 @@
-import sys,os,pygame
+import sys,os,pygame,json
 
 try:
     BASIC_PATH  = sys._MEIPASS
@@ -15,8 +15,16 @@ DOT_RADIUS = 10
 
 LINE_WIDTH = 4
 
-UI_TEXT = ['choose','Dot', 'Line']
-UI_NUM = len(UI_TEXT)
+with open(f"{BASIC_PATH}/setting.json", 'r', encoding='utf-8') as file:
+    js_data = list(json.load(file).values())
+    UI_TEXT = js_data[0]
+    UI_NUM = len(UI_TEXT)
+    UI_IMAGE = []
+    for i in js_data[1]:
+        UI_IMAGE.append(os.path.join(BASIC_PATH, f"img/{i}.png"))
+
+
+TTF_PATH = "ttf/WenJinMinchoP0-Regular.ttf"
 
 SELECTED_COLOR = (0, 255, 255)
 SELECTED_WIDTH = 3
@@ -28,3 +36,5 @@ DRAW_ORDER = {
     'Dot': 2,
     'Text': 3,
 }
+if __name__ == "__main__":
+    print(UI_TEXT)
