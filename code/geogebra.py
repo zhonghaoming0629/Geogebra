@@ -91,13 +91,15 @@ class GeoGebra:
                     # 如果当前有选择对象，并且点击的对象不是当前选择对象，则根据当前选择的界面元素类型执行相应的操作，例如创建点或线
                     if self.choose_obj:
                         x, y = pygame.mouse.get_pos()
-                        if not self.select_bg.rect.collidepoint(x, y):
-                            if self.choose_obj == "choose":
+                        if not self.select_bg.get_rect().collidepoint(x, y):
+                            if self.choose_obj == UI_TEXT[0]:
                                 self.choose_obj = None
-                            elif self.choose_obj == Dot.__name__:
+                            elif self.choose_obj == UI_TEXT[1]:
                                 self.create_Dot(pos)
-                            elif self.choose_obj == Line.__name__:
+                            elif self.choose_obj == UI_TEXT[2]:
                                 self.create_Line(pos)
+                            elif self.choose_obj == UI_TEXT[3]:
+                                self.create_Circle(pos)
             # 处理鼠标松开事件                                      
             elif event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1: # 鼠标左键松开
@@ -127,7 +129,7 @@ class GeoGebra:
         nearest_obj = None
         for obj in self.all_sprites:
             if match_condition(obj):
-                distance = (pos - pygame.Vector2(obj.rect.center)).length()
+                distance = (pos - pygame.Vector2(obj.get_rect().center)).length()
 
                 if distance < min_distance and distance < 10:
                     min_distance = distance
@@ -182,7 +184,32 @@ class GeoGebra:
                     dot2 = obj
                 self.select_memory.remove(obj)
         if dot2:
-            dot1.connect(dot2)
+            start_pos = dot1.get_rect().center
+            end_pos = dot2.get_rect().center        
+            line = Line(dot1.groups(), start_pos, end_pos, [dot1, dot2])
+            dot1.add_son(line)
+
+    def create_Circle(self, pos):
+        log('Create a circle')
+        if isinstance(self.select, Dot):
+            dot1 = self.select
+        else:
+            dot1 = self.create_Dot(pos)
+        
+
+        dot2 = None
+        for idx in reversed(range(len(self.select_memory))):
+            obj = self.select_memory[idx]
+            if isinstance(obj, Dot) and obj != self.select:
+                if not dot2:
+                    dot2 = obj
+                self.select_memory.remove(obj)
+        if dot2:
+            center_pos = dot1.get_rect().center
+            radius = (pygame.Vector2(dot1.get_rect().center) - pygame.Vector2(dot2.get_rect().center)).length()
+            circle = Circle(dot1.groups(), center_pos, radius, [dot1, dot2])
+            dot1.add_son(circle)
+
 
     def get_mouse_pos(self):
         pos = pygame.Vector2(pygame.mouse.get_pos()) + self.pos
@@ -194,8 +221,8 @@ class CameraGroup(pygame.sprite.Group):
         self.screen = screen
 
     def custom_draw(self, pos, select, mouse_pos):
-        for layer in DRAW_ORDER.values():
-            for sprite in sorted(self.sprites(), key=lambda sprite: sprite.rect.centery):
+        for layer in range(4):
+            for sprite in sorted(self.sprites(), key=lambda sprite: sprite.get_rect().centery):
                 if sprite.z == layer:
                     if sprite.get_drag():
                         sprite.set_pos(mouse_pos)

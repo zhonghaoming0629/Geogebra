@@ -1,8 +1,5 @@
 {
     "ui-text" : ["选择", "点", "线","圆(圆形与一点)"],
-    "ui-image": ["choose",
-                "dot",
-                "line",
-                "circle1"
-                ] 
+    "ui-image": ["choose","dot","line","circle1"],
+    "draw-order" : {"Bg" : 3,"Line" : 0,"Dot": 1,"Text": 2}
 }

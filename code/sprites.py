@@ -3,6 +3,13 @@
 import pygame
 from const import *
 
+class GeoGebraError(Exception):
+    def __init__(self, message):
+        self.message = message
+
+    def __str__(self):
+        return f"GeoGebraError: {self.message}"
+
 class GeoGebraObject(pygame.sprite.Sprite):
     '''
     所有geogebra对象的基础类
@@ -13,6 +20,8 @@ class GeoGebraObject(pygame.sprite.Sprite):
         self.parents = parents
         self.sons = []
         self.z = z
+        self.appear = True
+        self.rect = None
 
         self.selected_color = SELECTED_COLOR
         self.selected_width = SELECTED_WIDTH
@@ -35,19 +44,20 @@ class GeoGebraObject(pygame.sprite.Sprite):
 
     def draw(self, screen, pos, select):
         """递归绘制自身和所有子对象"""
-        if self.can_moved:
-            blit_x = self.rect.x - pos.x
-            blit_y = self.rect.y - pos.y
-        else:
-            blit_x = self.rect.x
-            blit_y = self.rect.y
-        screen.blit(self.image, (blit_x, blit_y))
-        if self == select:
-            border_rect = pygame.Rect(blit_x, blit_y, self.rect.width, self.rect.height)
-            pygame.draw.rect(screen, self.selected_color, border_rect, self.selected_width)                    
-        if self.sons:
-            for child in self.sons:
-                child.draw(screen, pos, select)
+        if self.appear:
+            if self.can_moved:
+                blit_x = self.rect.x - pos.x
+                blit_y = self.rect.y - pos.y
+            else:
+                blit_x = self.rect.x
+                blit_y = self.rect.y
+            screen.blit(self.image, (blit_x, blit_y))
+            if self == select:
+                border_rect = pygame.Rect(blit_x, blit_y, self.rect.width, self.rect.height)
+                pygame.draw.rect(screen, self.selected_color, border_rect, self.selected_width)                    
+            if self.sons:
+                for child in self.sons:
+                    child.draw(screen, pos, select)
 
     def set_drag(self):
         '''
@@ -61,6 +71,15 @@ class GeoGebraObject(pygame.sprite.Sprite):
         获取当前是否被拖动的状态
         '''
         return self.dragged
+    
+    def add_son(self, other):
+        self.sons.append(other)
+    
+    def get_rect(self):
+        if self.rect:
+            return self.rect
+        else:
+            raise GeoGebraError("you is cheat this system! you use a undefine object")
 
 class GeoGebraUi(GeoGebraObject):
     '''
@@ -89,7 +108,7 @@ class SelectBg(GeoGebraUi):
         :param height: 背景高度
         :param groups: 所属的精灵组
         '''
-        super().__init__(pos, groups, z=z)
+        super().__init__(pos, groups, z=DRAW_ORDER['Bg'])
         self.image = pygame.Surface((WEIGH, 800 - height))
         self.image.fill(SELECT_BG_COLOR)
         self.rect = self.image.get_rect(topleft=pos)
@@ -161,18 +180,6 @@ class Dot(GeoGebraObject):
         text_pos = (self.rect.centerx, self.rect.bottom - 10)
         text_obj = Text(text, text_pos, self.color, 18, groups, parents=[self])
         self.sons.append(text_obj)
-
-
-    def connect(self,other):
-        '''
-        连接两点
-        
-        :param other: 同为Dot类的另一个点对象
-        '''
-        start_pos = self.rect.center
-        end_pos = other.rect.center        
-        line_obj = Line(self.groups(), start_pos, end_pos, [self, other])
-        self.sons.append(line_obj)
 
 class Text(GeoGebraObject):
     def __init__(self, text, pos, color, size, groups, parents=None, z=DRAW_ORDER['Text']):
