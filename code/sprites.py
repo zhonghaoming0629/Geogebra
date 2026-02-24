@@ -14,7 +14,7 @@ class GeoGebraObject(pygame.sprite.Sprite):
     '''
     所有geogebra对象的基础类
     '''
-    def __init__(self,pos, groups, parents=None, z=DRAW_ORDER['Bg']):
+    def __init__(self,pos, groups, parents=None, z=DRAW_ORDER['Line']):
         super().__init__(groups)
         self.pos = pygame.Vector2(pos)
         self.parents = parents
@@ -80,6 +80,9 @@ class GeoGebraObject(pygame.sprite.Sprite):
             return self.rect
         else:
             raise GeoGebraError("you is cheat this system! you use a undefine object")
+        
+    def set_appear(self):
+        self.appear = not self.appear
 
 class GeoGebraUi(GeoGebraObject):
     '''
@@ -95,6 +98,74 @@ class GeoGebraUi(GeoGebraObject):
         super().__init__(pos, groups)
         self.can_dragged = False
         self.can_moved = False
+
+class InputBox(GeoGebraObject):
+    """输入框类"""
+    def __init__(self, pos, width, height, placeholder, groups, size=18, z=DRAW_ORDER['Text']):
+        super().__init__(pos, groups, z=z)
+        self.can_dragged = False
+        self.can_moved = False
+        self.appear = False
+    
+        # 位置和大小
+        self.rect = pygame.Rect(pos.x, pos.y, width, height)
+        # 样式
+        path = os.path.join(BASIC_PATH, TTF_PATH)
+        self.font = pygame.font.Font(path, size)
+        self.placeholder = placeholder
+        self.size = size
+        
+        # 状态
+        self.text = ""  # 输入的文本
+        self.active = False  # 是否获得焦点
+        self.cursor_visible = True  # 光标是否可见
+        self.cursor_timer = 0  # 光标闪烁计时器
+    
+    def get_active(self):
+        return self.active
+    
+    def set_active(self, bool):
+        self.active = bool
+        
+    def update(self):
+        """更新状态（光标闪烁）"""
+        # 每500ms切换光标可见状态
+        self.cursor_timer += 1
+        if self.cursor_timer >= FPS // 2:
+            self.cursor_visible = not self.cursor_visible
+            self.cursor_timer = 0
+    
+    def draw(self, screen, pos, select):
+        """绘制输入框"""
+        if self.appear:
+            self.update()
+            border_color = pygame.Color("blue") if self.active else pygame.Color("grey")
+            bg_color = pygame.Color("white") if self.active else pygame.Color("lightgrey")
+        
+            pygame.draw.rect(screen, bg_color, self.rect)
+            pygame.draw.rect(screen, border_color, self.rect, 2)
+            
+            if self.text:
+                text_surface = self.font.render(self.text, True, pygame.Color("black"))
+            else:
+                text_surface = self.font.render(self.placeholder, True, pygame.Color("grey"))
+            
+            text_rect = text_surface.get_rect(
+                centerx=self.rect.centerx,
+                centery=self.rect.centery,
+                left=self.rect.left + 10
+            )
+            screen.blit(text_surface, text_rect)
+            
+            # 焦点状态下绘制闪烁光标
+            if self.active and self.cursor_visible:
+                # 光标位置在文本末尾
+                cursor_x = text_rect.right + 2
+                cursor_y = self.rect.top + 5
+                cursor_height = self.rect.height - 10
+                
+                # 绘制光标（竖线）
+                pygame.draw.line(screen, pygame.Color("black"), (cursor_x, cursor_y), (cursor_x, cursor_y + cursor_height), 2)
 
 class SelectBg(GeoGebraUi):
     '''
@@ -230,8 +301,9 @@ class Line(GeoGebraObject):
         self.rect = self.image.get_rect(topleft=(min_x, min_y))
 
     def draw(self, screen, pos, select):
-        self.rebuild()
-        super().draw(screen, pos, select)
+        if self.appear:
+            self.rebuild()
+            super().draw(screen, pos, select)
 
 class Circle(GeoGebraObject):
     def __init__(self, groups, center_pos, radius, parents, color = pygame.Color("black"), z=DRAW_ORDER['Line']):
@@ -256,5 +328,6 @@ class Circle(GeoGebraObject):
         self.rect = self.image.get_rect(topleft=(center_pos.x - radius, center_pos.y - radius))
 
     def draw(self, screen, pos, select):
-        self.rebuild()
-        super().draw(screen, pos, select)
+        if self.appear:
+            self.rebuild()
+            super().draw(screen, pos, select)

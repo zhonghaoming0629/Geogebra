@@ -25,12 +25,12 @@ class GeoGebra:
         self.select_height = SELECT_BG_HEIGHT[1]
         # 创建选择背景对象，并将其添加到精灵组中
         self.select_bg = SelectBg((0,self.select_height),self.select_height, self.all_sprites)
+        self.input_box = InputBox(pygame.Vector2(WEIGH/2, HEIGHT/2), 100, 30,"请输入长度", self.all_sprites)
         # 定义所有可选择的对象类型和界面元素类型
-        self.all_selected = (Dot,Line)
+        self.all_selected = (Dot,Line,Circle)
         # 选择界面元素的类型
         self.choose_ui = tuple(type(son) for son in self.select_bg.sons)
         self.choose_obj = None
-        print(self.choose_ui)
         # 当前选择的对象和选择历史记录
         self.select = None
         self.select_memory = []
@@ -55,18 +55,29 @@ class GeoGebra:
             # 处理键盘按下事件
             elif event.type == pygame.KEYDOWN:
                 log(f"Key pressed: {event.key}")
-                pos = self.get_mouse_pos()
-                # 根据按下的键执行相应的操作，例如创建点或线
-                #if event.key == pygame.K_c:
-                #    self.create_Dot(pos)
-                #if event.key == pygame.K_x:
-                #    self.create_Line()
-            # 处理鼠标按下事件
+                if self.input_box.get_active():
+                    if event.key == pygame.K_BACKSPACE:
+                        self.input_box.text= self.input_box.text[:-1]
+                    # 回车键 - 确认输入（这里仅打印，可自定义逻辑）
+                    elif event.key == pygame.K_RETURN:
+                        pass
+                        # 可选：清空输入框
+                        # self.text = ""
+                    # 普通字符 - 过滤特殊键，只添加可打印字符
+                    elif event.unicode.isprintable():
+                        # 限制输入长度（可选）
+                        if len(self.input_box.text) < 20:
+                            if event.unicode.isdigit():
+                                self.input_box.text += event.unicode
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:  # 鼠标左键按下
                     # 寻找鼠标点击最近的对象和ui
                     obj = self.search_nearest_object(pos, self.lb)
                     ui = self.search_nearest_object(pos, self.ui)
+                    if self.input_box.rect.collidepoint(pos):
+                        self.input_box.set_active(True)
+                    else:
+                        self.input_box.set_active(False)
                     # 如果ui有值，设置选择对象为ui名称
                     if ui:
                         self.choose_obj = ui.get_name()
@@ -151,7 +162,6 @@ class GeoGebra:
         self.dot_n += 1
         return text
     
-
     def create_Dot(self, pos):
         '''
         创建一个点

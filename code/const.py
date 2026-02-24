@@ -45,6 +45,8 @@ SELECT_BG_COLOR= pygame.Color('lightgray')
 WEIGH = 800
 HEIGHT = 800
 
+FPS = 60
+
 DOT_RADIUS = 10
 
 LINE_WIDTH = 4
