@@ -1,8 +1,7 @@
 import sys,os,pygame,json
 
-js_data = data = load_json_file(f"{BASIC_PATH}/setting.json")
-
 def load_json_file(file_path):
+
     """
     安全地加载JSON文件,包含完整的错误处理
     """
@@ -37,6 +36,8 @@ try:
     BASIC_PATH  = sys._MEIPASS
 except AttributeError:
     BASIC_PATH  = os.path.abspath(".")
+
+js_data = data = load_json_file(f"{BASIC_PATH}/setting.json")
 
 SELECT_BG_POS = pygame.Vector2()
 SELECT_BG_COLOR= pygame.Color('lightgray')

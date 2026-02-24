@@ -60,6 +60,10 @@
   {
    "optionDest": "datas",
    "value": "C:/Users/dearz/Desktop/deeesekk/desktop/python/GeoGebra/ttf;ttf/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "C:/Users/dearz/Desktop/deeesekk/desktop/python/Geogebra/setting.json;."
   }
  ],
  "nonPyinstallerOptions": {
