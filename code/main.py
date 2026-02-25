@@ -18,7 +18,7 @@ class Game:
                 self.geogebra.run()
                 pygame.display.update()
                 self.screen.fill(pygame.Color("white"))
-                self.clock.tick(60)
+                self.clock.tick(FPS)
         except Exception as e:
             log(f"{e}", "Error")
             raise e

@@ -59,6 +59,11 @@ class GeoGebraObject(pygame.sprite.Sprite):
                 for child in self.sons:
                     child.draw(screen, pos, select)
 
+    def delete(self):
+        for son in self.sons:
+            son.kill()    
+        self.kill()
+
     def set_drag(self):
         '''
         更改是否被拖动的状态
@@ -80,8 +85,11 @@ class GeoGebraObject(pygame.sprite.Sprite):
             return self.rect
         else:
             raise GeoGebraError("you is cheat this system! you use a undefine object")
-        
+ 
     def set_appear(self):
+        for son in self.sons:
+            if isinstance(son, Text):
+                son.set_appear()
         self.appear = not self.appear
 
 class GeoGebraUi(GeoGebraObject):
@@ -209,7 +217,7 @@ class SelectBg(GeoGebraUi):
         for i in range(len(UI_TEXT)):
             text = UI_TEXT[i]
             image = UI_IMAGE[i]
-            son_pos = (self.rect.topleft[0] + 50*i, self.rect.topleft[1] + 10)
+            son_pos = (self.rect.topleft[0] + 75*i, self.rect.topleft[1] + 10)
             son = GeoGebraUi(son_pos, self.groups())
             basic_image = pygame.image.load(image).convert_alpha()
             son.image = pygame.transform.scale(basic_image, (50, 50))

@@ -10,4 +10,5 @@ __pycache__/
 
 logs/
 
-PyToExeSetting.json
+AutoPyToExe.json
+AutoPyToExe.bat

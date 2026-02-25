@@ -101,16 +101,7 @@ class GeoGebra:
                             self.move_background = True 
                     # 如果当前有选择对象，并且点击的对象不是当前选择对象，则根据当前选择的界面元素类型执行相应的操作，例如创建点或线
                     if self.choose_obj:
-                        x, y = pygame.mouse.get_pos()
-                        if not self.select_bg.get_rect().collidepoint(x, y):
-                            if self.choose_obj == UI_TEXT[0]:
-                                self.choose_obj = None
-                            elif self.choose_obj == UI_TEXT[1]:
-                                self.create_Dot(pos)
-                            elif self.choose_obj == UI_TEXT[2]:
-                                self.create_Line(pos)
-                            elif self.choose_obj == UI_TEXT[3]:
-                                self.create_Circle(pos)
+                        self.choose(pos)
             # 处理鼠标松开事件                                      
             elif event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1: # 鼠标左键松开
@@ -120,13 +111,14 @@ class GeoGebra:
                         self.select = None
                     if self.move_background:    
                         self.move_background = False
+
+        self.screen.fill(pygame.Color("white"))
         self.all_sprites.custom_draw(self.pos, self.select, self.get_mouse_pos())
+        pygame.display.flip()
 
         # 如果正在拖动背景，更新位置
         if self.move_background:
             self.pos = self.drag_bg_pos + self.drag_mouse_screen_pos - pygame.Vector2(pygame.mouse.get_pos())
-
-        pygame.display.flip()
 
     def search_nearest_object(self, pos, match_condition):
         '''
@@ -149,6 +141,23 @@ class GeoGebra:
             return nearest_obj
         else:
             return
+        
+    def choose(self,pos):
+        x, y = pygame.mouse.get_pos()
+        if not self.select_bg.get_rect().collidepoint(x, y):
+            if self.choose_obj == "选择":
+                self.choose_obj = None
+            elif self.choose_obj == "删除" and self.select:
+                self.select.delete()
+                self.select = None
+            elif self.choose_obj == "显示/隐藏对象" and self.select:
+                self.select.set_appear()
+            elif self.choose_obj == "点":
+                self.create_Dot(pos)
+            elif self.choose_obj == "线":
+                self.create_Line(pos)
+            elif self.choose_obj == "圆(圆形与一点)":
+                self.create_Circle(pos)
 
     def dot_num(self):
         '''
@@ -198,6 +207,7 @@ class GeoGebra:
             end_pos = dot2.get_rect().center        
             line = Line(dot1.groups(), start_pos, end_pos, [dot1, dot2])
             dot1.add_son(line)
+            dot2.add_son(line)
 
     def create_Circle(self, pos):
         log('Create a circle')
@@ -219,7 +229,7 @@ class GeoGebra:
             radius = (pygame.Vector2(dot1.get_rect().center) - pygame.Vector2(dot2.get_rect().center)).length()
             circle = Circle(dot1.groups(), center_pos, radius, [dot1, dot2])
             dot1.add_son(circle)
-
+            dot2.add_son(circle)
 
     def get_mouse_pos(self):
         pos = pygame.Vector2(pygame.mouse.get_pos()) + self.pos

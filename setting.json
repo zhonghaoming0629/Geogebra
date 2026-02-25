@@ -1,6 +1,6 @@
 {
-    "ui-text" : ["选择", "点", "线","圆(圆形与一点)"],
-    "ui-image": ["choose","dot","line","circle1"],
+    "ui-text" : ["选择","删除","显示/隐藏对象", "点", "线","圆(圆形与一点)","定长线段"],
+    "ui-image": ["choose","delete","Shobject","dot","line","circle1","lineFL"],
     "draw-order" : {"Bg" : 3,"Line" : 0,"Dot": 1,"Text": 2},
     "ttf-path" : "ttf/WenJinMinchoP0-Regular.ttf"
 }
