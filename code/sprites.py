@@ -44,6 +44,7 @@ class GeoGebraObject(pygame.sprite.Sprite):
 
     def draw(self, screen, pos, select):
         """递归绘制自身和所有子对象"""
+        pygame.draw.rect(screen, pygame.Color("red"), self.rect, width=2)
         if self.can_moved:
             blit_x = self.rect.x - pos.x
             blit_y = self.rect.y - pos.y
@@ -97,6 +98,9 @@ class GeoGebraObject(pygame.sprite.Sprite):
                 son.set_appear()
         self.appear = not self.appear
 
+    def cal_ana_exp(self):
+        pass
+        
 class GeoGebraUi(GeoGebraObject):
     '''
     GeoGebraUi类，继承自GeoGebraObject，表示界面元素
@@ -264,6 +268,8 @@ class Dot(GeoGebraObject):
         text_pos = (self.rect.centerx, self.rect.bottom - 10)
         text_obj = Text(text, text_pos, self.color, 18, groups, parents=[self])
         self.sons.append(text_obj)
+
+    #def cal_ana_exp(self
 
 class Text(GeoGebraObject):
     def __init__(self, text, pos, color, size, groups, parents=None, z=DRAW_ORDER['Text']):
