@@ -55,20 +55,7 @@ class GeoGebra:
             # 处理键盘按下事件
             elif event.type == pygame.KEYDOWN:
                 log(f"Key pressed: {event.key}")
-                if self.input_box.get_active():
-                    if event.key == pygame.K_BACKSPACE:
-                        self.input_box.text= self.input_box.text[:-1]
-                    # 回车键 - 确认输入（这里仅打印，可自定义逻辑）
-                    elif event.key == pygame.K_RETURN:
-                        pass
-                        # 可选：清空输入框
-                        # self.text = ""
-                    # 普通字符 - 过滤特殊键，只添加可打印字符
-                    elif event.unicode.isprintable():
-                        # 限制输入长度（可选）
-                        if len(self.input_box.text) < 20:
-                            if event.unicode.isdigit():
-                                self.input_box.text += event.unicode
+                self.get_input(event)
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:  # 鼠标左键按下
                     # 寻找鼠标点击最近的对象和ui
@@ -120,6 +107,21 @@ class GeoGebra:
         if self.move_background:
             self.pos = self.drag_bg_pos + self.drag_mouse_screen_pos - pygame.Vector2(pygame.mouse.get_pos())
 
+    def get_input(self, event):
+        if self.input_box.get_active():
+            if event.key == pygame.K_BACKSPACE:
+                self.input_box.text= self.input_box.text[:-1]
+            # 回车键 - 确认输入（这里仅打印，可自定义逻辑）
+            elif event.key == pygame.K_RETURN:
+                if self.choose_obj == "定长线段":
+                    self.create_Line(self.pos)
+            # 普通字符 - 过滤特殊键，只添加可打印字符
+            elif event.unicode.isprintable():
+            # 限制输入长度（可选）
+                if len(self.input_box.text) < 20:
+                    if event.unicode.isdigit():
+                        self.input_box.text += event.unicode
+
     def search_nearest_object(self, pos, match_condition):
         '''
         查找最近的对象
@@ -158,6 +160,9 @@ class GeoGebra:
                 self.create_Line(pos)
             elif self.choose_obj == "圆(圆形与一点)":
                 self.create_Circle(pos)
+            elif self.choose_obj == "定长线段":
+                self.input_box.set_appear()
+
 
     def dot_num(self):
         '''
@@ -182,7 +187,24 @@ class GeoGebra:
         dot = Dot(self.all_sprites, text, pos, pygame.Color("blue"))
 
         return dot
-    
+
+    def create_LineFL(self, pos, long):
+        '''
+        创建一条线
+        
+        '''
+        log('Create a lineFL')
+        if isinstance(self.select, Dot):
+            dot1 = self.select
+        else:
+            dot1 = self.create_Dot(pos)
+        
+        dot2 = self.create_Dot(pos+pygame.Vector2(long, 0))
+        groups = list(set(dot1.groups()).union(dot2.groups()))
+        line = Line(groups, dot1.get_rect().center, [dot1, dot2])
+
+        return line
+
     def create_Line(self, pos):
         '''
         创建一条线
@@ -204,10 +226,11 @@ class GeoGebra:
                 self.select_memory.remove(obj)
         if dot2:
             start_pos = dot1.get_rect().center
-            end_pos = dot2.get_rect().center        
-            line = Line(dot1.groups(), start_pos, end_pos, [dot1, dot2])
+            groups = list(set(dot1.groups()).union(dot2.groups()))
+            line = Line(groups, start_pos, [dot1, dot2])
             dot1.add_son(line)
             dot2.add_son(line)
+            return line
 
     def create_Circle(self, pos):
         log('Create a circle')
@@ -227,9 +250,11 @@ class GeoGebra:
         if dot2:
             center_pos = dot1.get_rect().center
             radius = (pygame.Vector2(dot1.get_rect().center) - pygame.Vector2(dot2.get_rect().center)).length()
-            circle = Circle(dot1.groups(), center_pos, radius, [dot1, dot2])
+            groups = list(set(dot1.groups()).union(dot2.groups()))
+            circle = Circle(groups, center_pos, radius, [dot1, dot2])
             dot1.add_son(circle)
             dot2.add_son(circle)
+            return circle
 
     def get_mouse_pos(self):
         pos = pygame.Vector2(pygame.mouse.get_pos()) + self.pos

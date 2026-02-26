@@ -44,24 +44,29 @@ class GeoGebraObject(pygame.sprite.Sprite):
 
     def draw(self, screen, pos, select):
         """递归绘制自身和所有子对象"""
+        if self.can_moved:
+            blit_x = self.rect.x - pos.x
+            blit_y = self.rect.y - pos.y
+        else:
+            blit_x = self.rect.x
+            blit_y = self.rect.y
         if self.appear:
-            if self.can_moved:
-                blit_x = self.rect.x - pos.x
-                blit_y = self.rect.y - pos.y
-            else:
-                blit_x = self.rect.x
-                blit_y = self.rect.y
             screen.blit(self.image, (blit_x, blit_y))
-            if self == select:
-                border_rect = pygame.Rect(blit_x, blit_y, self.rect.width, self.rect.height)
-                pygame.draw.rect(screen, self.selected_color, border_rect, self.selected_width)                    
-            if self.sons:
-                for child in self.sons:
-                    child.draw(screen, pos, select)
+        else:
+            if select == "SH":
+                alpha_image = self.image.copy()
+                alpha_image.set_alpha(100)
+                screen.blit(alpha_image, (blit_x, blit_y))
+        if self == select:
+            border_rect = pygame.Rect(blit_x, blit_y, self.rect.width, self.rect.height)
+            pygame.draw.rect(screen, self.selected_color, border_rect, self.selected_width)                    
+        if self.sons:
+            for child in self.sons:
+                child.draw(screen, pos, select)
 
     def delete(self):
         for son in self.sons:
-            son.kill()    
+            son.delete()   
         self.kill()
 
     def set_drag(self):
@@ -279,7 +284,7 @@ class Text(GeoGebraObject):
         self.rect = self.image.get_rect(topleft=self.pos)
 
 class Line(GeoGebraObject):
-    def __init__(self, groups, s_pos, e_pos , parents, color = pygame.Color("black"), z=DRAW_ORDER['Line']):
+    def __init__(self, groups, s_pos, parents, color = pygame.Color("black"), z=DRAW_ORDER['Line']):
         super().__init__(s_pos, groups, parents, z=z)
         self.parent1 = parents[0]
         self.parent2 = parents[1]
