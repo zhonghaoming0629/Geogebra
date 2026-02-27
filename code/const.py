@@ -63,5 +63,7 @@ SELECTED_COLOR = (0, 255, 255)
 SELECTED_WIDTH = 3
 SELECT_BG_HEIGHT = [0, 600, HEIGHT]
 
+SUBSCRIPT_MAP = {'₀':'0','₁':'1','₂':'2','₃':'3','₄':'4','₅':'5','₆':'6','₇':'7','₈':'8','₉':'9'}
+
 if __name__ == "__main__":
-    print(js_data)
+    print(DRAW_ORDER)
