@@ -269,7 +269,7 @@ class Dot(GeoGebraObject):
         :param color: 点的颜色，默认为蓝色
         '''
         super().__init__(pos=pos, groups=groups, z=z)
-        if type != "normal":
+        if type == "intersection":
             self.can_dragged = False
         self.type = type
         self.parents = parents
@@ -285,28 +285,42 @@ class Dot(GeoGebraObject):
         text_obj = Text(self.text, text_pos, self.color, 18, text_lb, groups, parents=[self])
         self.sons.append(text_obj)
 
-    #def rebuild(self, pos):
-        # if self.appear:
-        #     if self.type == "intersection":
-        #         parent1_k ,parent1_b = self.parents[0].get_exp()
-        #         parent2_k ,parent2_b = self.parents[1].get_exp()
-        #         if isinstance(self.parents[0], Line):
-        #             if isinstance(self.parents[1], Line):
-        #                 if parent1_k - parent2_k == 0:
-        #                     self.pos.x = 0
-        #                 else:
-        #                     self.pos.x = (parent2_b - parent1_b) // (parent1_k - parent2_k)
-        #                 self.pos.y = parent1_k*self.pos.x + parent1_b
-        #             else:
-        #                 pass
-        #         else:
-        #             pass
-        #         for son in self.sons:
-        #             son.rebuild()
-        #     elif self.type == "plot":
-        #         parent_k, parent_b = self.parents[0].get_exp()
-        #         x = 
-        #     super().rebuild(pos)
+    def rebuild(self, pos):
+        if self.appear:
+            if self.type == "intersection":
+                parent1_k ,parent1_b = self.parents[0].get_exp()
+                parent2_k ,parent2_b = self.parents[1].get_exp()
+                if isinstance(self.parents[0], Line):
+                    if isinstance(self.parents[1], Line):
+                        if parent1_k - parent2_k == 0:
+                            self.pos.x = 0
+                        else:
+                            self.pos.x = (parent2_b - parent1_b) // (parent1_k - parent2_k)
+                        self.pos.y = parent1_k*self.pos.x + parent1_b
+                    else:
+                        pass
+                else:
+                    pass
+                for son in self.sons:
+                    son.rebuild(pos)
+            elif self.type == "plot":
+                parent_k, parent_b = self.parents[0].get_exp()
+                new_y = parent_k*pos.x + parent_b
+                if parent_k == 0:
+                    new_x = 0
+                else :
+                    new_x = (pos.y-parent_b) // parent_k
+                if min(new_x, new_y) == new_x:
+                    new_y = parent_k*new_x + parent_b
+                else:
+                    if parent_k == 0:
+                        new_x = 0
+                    else:
+                        new_x = (new_y-parent_b) // parent_k
+                for son in self.sons:
+                    son.rebuild(pos)
+            else:
+                super().rebuild(pos)
 
 class Text(GeoGebraObject):
     def __init__(self, text, pos, color, size,get_pos ,groups, parents=None, z=DRAW_ORDER['Text']):
