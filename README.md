@@ -1,13 +1,13 @@
-# Geogebra
+#### Geogebra
 Geogebra (Pygame Implementation)
 A lightweight geometric drawing and interaction tool developed based on the Python Pygame framework, replicating the core functions of the classic Geogebra (e.g., drawing, selecting, and deleting basic geometric shapes like points, lines, and circles). It is packaged as a Windows executable file and can be used directly without configuring a development environment.
-🌟 Core Features
+## Core Features
 Lightweight: Built on the Pygame 2D graphics engine, featuring small size and fast startup;
 Easy to Use: Provides a Windows executable file (Geogebra.exe) that can be launched with a double-click;
 Interactive: Supports drawing, selection, and deletion of basic geometric shapes (points, lines, circles, etc.);
 Extensible: Decoupled code structure for easy addition of new shape types, interaction logic, or functional modules;
 Logging: Built-in logging module to record program running status and error information for easy debugging.
-📁 Directory Structure
+## Directory Structure
 plaintext
 ├── .gitignore          # Git ignore rules configuration
 ├── LICENSE             # Open source license
@@ -29,7 +29,7 @@ plaintext
 └── ttf/                # Font resources (interface text rendering)
     ├── JetBrainsMono-2.304/
     └── WenJinMinchoP0-Regular.ttf
-🚀 Quick Start
+## Quick Start
 Method 1: Run the Executable File (Recommended)
 Navigate to the exe/ directory in the repository;
 Double-click Geogebra.exe to launch the tool;
@@ -43,14 +43,15 @@ pip install pygame
 Run the core entry file:
 bash
 python code/main.py
-⚙️ Configuration Notessetting.jsonon: Custom program configuration file; modify window size, default drawing parameters, log level, etc. (restart the program for changes to take effect);{insert\_element\_1\_Ci0gYGNvZGUvY29uc3Qu}py: Built-in constants (e.g., color values, key mappings, default graphic sizes) that can be adjusted during development.
-📝 Development Notes
+## Configuration Notes setting.json on:
+ Custom program configuration file; modify window size, default drawing parameters, log level, etc. (restart the program for changes to take effect);{insert\_element\_1\_Ci0gYGNvZGUvY29uc3Qu}py: Built-in constants (e.g., color values, key mappings, default graphic sizes) that can be adjusted during development.
+## Development Notes
 **Core Logicgeogebra.py.py implements geometric calculation and interacti{insert\_element\_3\_b247IGBzcHJpdGVz}.py handles graphic rendering via Pygame Sprite;
 **Event Handlingmain.py.py` listens for mouse/keyboard events to drive graphic interaction logic;
 Log Viewing: Program runtime logs are managedlog.py.py`; configure log output level/path as needed.
-📄 License
+## License
 This project is governed by the open source license defined inLICENSEENSE` file in the root directory of the repository. You are free to use, modify, and distribute the code in accordance with the license terms.
-📌 Future Expansion
+## Future Expansion
 Add more geometric shapes (polygons, ellipses, parabolas, etc.);
 Implement graphic property editing (color, thickness, labels, etc.);
 Add graphic calculation functions (distance, angle, area, etc.);
