@@ -1,10 +1,11 @@
-"""Module providing a function printing python version."""
-
+from __future__ import annotations
 import pygame
 from const import *
+from typing import Optional, TypeVar, Sequence
+
 
 class GeoGebraError(Exception):
-    def __init__(self, message):
+    def __init__(self, message : str):
         self.message = message
 
     def __str__(self):
@@ -14,14 +15,30 @@ class GeoGebraObject(pygame.sprite.Sprite):
     '''
     所有geogebra对象的基础类
     '''
-    def __init__(self,pos, groups, parents=None, z=DRAW_ORDER['Line']):
-        super().__init__(groups)
-        self.pos = pygame.Vector2(pos)
-        self.parents = parents
-        self.sons = []
+
+    image: pygame.Surface
+    rect: pygame.Rect
+    pos: pygame.Vector2
+    parents: Optional[GeoGebraObject]
+    z: int
+    groups: pygame.sprite.Group[GeoGebraObject]
+    name:str
+
+    def __init__(self,
+                *groups,
+                pos,
+                name,
+                parents: Optional[GeoGebraObject] = None,
+                z:int = DRAW_ORDER['Line']):
+        super().__init__(*groups)
+        self.pos = pos
+        self.parents = parents # type: ignore
+        self.sons:list[GeoGebraObject] = []
         self.z = z
         self.appear = True
-        self.rect = None
+        self.image = pygame.Surface((0, 0))
+        self.rect = self.image.get_rect(center=(pos.x, pos.y))
+        self.name = name
 
         self.selected_color = SELECTED_COLOR
         self.selected_width = SELECTED_WIDTH
@@ -30,19 +47,23 @@ class GeoGebraObject(pygame.sprite.Sprite):
         self.can_moved = True
         self.dragged = False
 
-    def rebuild(self, pos):
+    def rebuild(self, pos:pygame.Vector2):
         '''
         用于更新对象的位置
         
         :param pos: 新的位置坐标
         '''
         self.pos = pos
-        self.rect.center = self.pos
+        self.rect.center = (int(self.pos.x), int(self.pos.y))
         if self.sons:
             for son in self.sons:
                 son.rebuild(pos)
 
-    def draw(self, screen, pos, select):
+    def draw(self,
+            screen:pygame.Surface,
+            pos:pygame.Vector2,
+            select:Optional[GeoGebraObject],
+            hide_things_appear:bool) -> None:
         """递归绘制自身和所有子对象"""
         if self.can_moved:
             blit_x = self.rect.x - pos.x
@@ -50,11 +71,12 @@ class GeoGebraObject(pygame.sprite.Sprite):
         else:
             blit_x = self.rect.x
             blit_y = self.rect.y
-        pygame.draw.rect(screen, pygame.Color("red"), (blit_x, blit_y, self.rect.width, self.rect.height), width=2)
+        if DEBUG:
+            pygame.draw.rect(screen, pygame.Color("red"), (blit_x, blit_y, self.rect.width, self.rect.height), width=2)
         if self.appear:
             screen.blit(self.image, (blit_x, blit_y))
         else:
-            if select == "SH":
+            if hide_things_appear:
                 alpha_image = self.image.copy()
                 alpha_image.set_alpha(100)
                 screen.blit(alpha_image, (blit_x, blit_y))
@@ -62,11 +84,11 @@ class GeoGebraObject(pygame.sprite.Sprite):
             border_rect = pygame.Rect(blit_x, blit_y, self.rect.width, self.rect.height)
             pygame.draw.rect(screen, self.selected_color, border_rect, self.selected_width)                    
         if self.sons:
-            for child in self.sons:
-                child.draw(screen, pos, select)
+            for son in self.sons:
+                son.draw(screen, pos, select, hide_things_appear)
 
-    def delete(self, used_dot_names):
-        deleted_names = []
+    def delete(self, used_dot_names:list[str]) -> list[str]:
+        deleted_names:list[str] = []
         for son in self.sons:
             son_names = son.delete(used_dot_names)
             deleted_names.extend(son_names)
@@ -78,12 +100,12 @@ class GeoGebraObject(pygame.sprite.Sprite):
         self.kill()
         return deleted_names
 
-    def set_drag(self):
+    def set_drag(self, b:bool):
         '''
         更改是否被拖动的状态
         '''
         if self.can_dragged:
-            self.dragged = not self.dragged
+            self.dragged = b
     
     def get_drag(self):
         '''
@@ -91,7 +113,7 @@ class GeoGebraObject(pygame.sprite.Sprite):
         '''
         return self.dragged
     
-    def add_son(self, other):
+    def add_son(self, other:GeoGebraObject):
         self.sons.append(other)
     
     def get_rect(self):
@@ -109,26 +131,40 @@ class GeoGebraObject(pygame.sprite.Sprite):
     def cal_ana_exp(self):
         pass
         
+    def get_distance(self, pos:pygame.Vector2):
+        return self.rect.center - pos
+    
 class GeoGebraUi(GeoGebraObject):
 
     '''
-    GeoGebraUi类，继承自GeoGebraObject，表示界面元素
+    GeoGebraUi类,继承自GeoGebraObject.表示界面元素
     '''
-    def __init__(self,pos, groups, z=DRAW_ORDER['Bg']):
+    def __init__(self,
+                *groups:pygame.sprite.Group[GeoGebraObject],
+                pos:pygame.Vector2,
+                name,
+                z :int =DRAW_ORDER['Bg']):
         '''
         初始化GeoGebraUi对象
         
         :param pos: 初始位置坐标
         :param groups: 所属的精灵组
         '''
-        super().__init__(pos=pos, groups=groups, z=z)
+        super().__init__(*groups,pos=pos,z=z)
         self.can_dragged = False
         self.can_moved = False
 
 class InputBox(GeoGebraObject):
     """输入框类"""
-    def __init__(self, pos, width, height, placeholder, groups, size=18, z=DRAW_ORDER['Text']):
-        super().__init__(pos=pos, groups=groups, z=z)
+    def __init__(self, 
+                *groups : Optional[pygame.sprite.Group[GeoGebraObject]],
+                pos : pygame.Vector2,
+                width : float,
+                height : float,
+                placeholder : str,
+                size : int = 18,
+                z : int = DRAW_ORDER['Text']):
+        super().__init__(*groups,pos=pos, z=z, name="InputBox")
         self.can_dragged = False
         self.can_moved = False
         self.appear = False
@@ -161,7 +197,7 @@ class InputBox(GeoGebraObject):
             self.cursor_visible = not self.cursor_visible
             self.cursor_timer = 0
     
-    def draw(self, screen, pos, select):
+    def draw(self, screen, pos, select, hide_things_appear:bool):
         """绘制输入框"""
         if self.appear:
             self.update()
@@ -197,7 +233,7 @@ class SelectBg(GeoGebraUi):
     '''
     选择对象的背景
     '''
-    def __init__(self,pos, height, groups, z=DRAW_ORDER['Bg']):
+    def __init__(self,*groups,pos, height, z=DRAW_ORDER['Bg']):
         '''
         初始化SelectBg对象
         
@@ -205,7 +241,7 @@ class SelectBg(GeoGebraUi):
         :param height: 背景高度
         :param groups: 所属的精灵组
         '''
-        super().__init__(pos=pos, groups=groups, z=z)
+        super().__init__(*groups, pos=pos,z=z, name="SelectBg")
         self.image = pygame.Surface((WEIGH, 800 - height))
         self.image.fill(SELECT_BG_COLOR)
         self.rect = self.image.get_rect(topleft=pos)
@@ -234,31 +270,33 @@ class SelectBg(GeoGebraUi):
         '''
         for i in range(len(UI_TEXT)):
             text = UI_TEXT[i]
-            image = UI_IMAGE[i]
-            son_pos = (self.rect.topleft[0] + 75*i, self.rect.topleft[1] + 10)
-            son = GeoGebraUi(son_pos, self.groups())
-            basic_image = pygame.image.load(image).convert_alpha()
-            son.image = pygame.transform.scale(basic_image, (50, 50))
-            son.rect = son.image.get_rect(topleft=son.pos)
+            son_pos = pygame.Vector2(self.rect.topleft[0] + 75*i, self.rect.topleft[1] + 10)
+            basic_image = pygame.image.load(UI_IMAGE[i]).convert_alpha()
+            image = pygame.transform.scale(basic_image, (50, 50))
+            son = GeoGebraUi(self.groups(), pos=son_pos, image=image, name=text)
             son.text = text
-            son.name = text
-            son.get_name = lambda text=text: text
 
 
-            text_pos = (son.rect.centerx, son.rect.bottom - 10)
+            text_pos = pygame.Vector2(son.rect.centerx, son.rect.bottom - 10)
             text_lb = lambda obj: (obj.rect.centerx, obj.rect.bottom - 10) 
-            text_obj = Text(text, text_pos, pygame.Color("black"), 15, text_lb, self.groups(), parents=[son])
+            text_obj = Text(self.groups(),
+                            text=text,
+                            pos=text_pos,
+                            color=pygame.Color("black"),
+                            size=15,
+                            func=text_lb,
+                            parents=[son])
             text_obj.can_moved = False
 
 
-            son.sons.append(text_obj)
-            self.sons.append(son)
+            son.add_son(text_obj)
+            self.add_son(son)
 
 class Dot(GeoGebraObject):
     '''
     点
     '''
-    def __init__(self,groups, text, pos, type , parents = [], color = pygame.Color("blue"), z=DRAW_ORDER['Dot']):
+    def __init__(self,*groups, text:str, pos, type , parents = [], color = pygame.Color("blue"), z=DRAW_ORDER['Dot']):
         '''
         初始化
         
@@ -268,7 +306,7 @@ class Dot(GeoGebraObject):
         :param pos: 点的初始位置坐标
         :param color: 点的颜色，默认为蓝色
         '''
-        super().__init__(pos=pos, groups=groups, z=z)
+        super().__init__(*groups,pos=pos-pygame.Vector2(DOT_RADIUS, DOT_RADIUS),  z=z, name=text)
         if type == "intersection":
             self.can_dragged = False
         self.type = type
@@ -280,9 +318,15 @@ class Dot(GeoGebraObject):
         pygame.draw.circle(self.image,self.color, (self.radius, self.radius),self.radius)
         self.rect = self.image.get_rect(topleft=self.pos)
 
-        text_pos = (self.rect.centerx, self.rect.bottom - 10)
+        text_pos = pygame.Vector2(self.rect.centerx, self.rect.bottom - 10)
         text_lb = lambda obj: (obj.rect.centerx, obj.rect.bottom - 10) 
-        text_obj = Text(self.text, text_pos, self.color, 18, text_lb, groups, parents=[self])
+        text_obj = Text(groups,
+                        text=self.text,
+                        pos=text_pos,
+                        color=self.color,
+                        size=18,
+                        func=text_lb, 
+                        parents=[self])
         self.sons.append(text_obj)
 
     def rebuild(self, pos):
@@ -323,34 +367,34 @@ class Dot(GeoGebraObject):
                 super().rebuild(pos)
 
 class Text(GeoGebraObject):
-    def __init__(self, text, pos, color, size,get_pos ,groups, parents=None, z=DRAW_ORDER['Text']):
-        super().__init__(pos=pos, groups=groups,parents=parents,z=z)
+    def __init__(self,*groups, text, pos, color, size, func, parents=None, z=DRAW_ORDER['Text']):
+        super().__init__(*groups,pos=pos,parents=parents,z=z, name=text)
         self.text = str(text)
         path = os.path.join(BASIC_PATH, TTF_PATH)
         self.font = pygame.font.Font(path, size)
         self.image = self.font.render(self.text, True, color)
         self.rect = self.image.get_rect(topleft=pos)
-        self.get_pos = get_pos
+        self.func = func
         if parents:
             self.can_dragged = False
 
     def rebuild(self, pos):
         if len(self.parents) == 1:
             self.pos = (self.parents[0].rect.centerx, self.parents[0].rect.bottom - 10)
-            self.pos = self.get_pos(self.parents[0])
+            self.pos = self.func(self.parents[0])
         else:
             self.pos = pos
         self.rect = self.image.get_rect(topleft=self.pos)
 
 class Line(GeoGebraObject):
-    def __init__(self, groups, pos, parents, color = pygame.Color("black"), z=DRAW_ORDER['Line']):
-        super().__init__(pos=pos, groups=groups,parents=parents, z=z)
+    def __init__(self, *groups, pos, parents : list[Dot], color = pygame.Color("black"), z=DRAW_ORDER['Line']):
         self.parent1 = parents[0]
         self.parent2 = parents[1]
+        super().__init__(*groups,pos=pos,parents=parents, z=z, name=self.parent1.name + self.parent2.name)
         self.color = color
         self.width = LINE_WIDTH
         self.can_dragged = False
-        self.k, self.b = self.cal_ana_exp(self.parent1.rect, self.parent2.rect)
+        self.type, self.k, self.b = self.cal_ana_exp(self.parent1.rect, self.parent2.rect)
 
         self.rebuild(pos)
 
@@ -372,24 +416,39 @@ class Line(GeoGebraObject):
         pygame.draw.line(self.image, self.color, local_s, local_e, self.width)
         
         self.rect = self.image.get_rect(topleft=(min_x, min_y))
+    
+    def get_distance(self, pos):
+        if self.k == 0:
+            k = float("inf")
+            b = 0
+        else:
+            k = -1 // self.k
+            b = pos.y - k*pos.x
 
-
-    def cal_ana_exp(self, pos1, pos2):
-        if pos1.x-pos2.x == 0:
+    def cal_ana_exp(self,
+                    pos1:pygame.Vector2,
+                    pos2:pygame.Vector2):
+        if pos1.x == pos2.x:
+            type = "level"
             k = 0
+            b = pos1.y
+        elif pos1.y == pos2.y:
+            type = "up"
+            k = float("inf")
+            b = float("inf")
         else:
             k = (pos1.y - pos2.y) // (pos1.x - pos2.x)
-        b = pos1.y - k * pos1.x
-        return k, b 
+            b = pos1.y - k * pos1.x
+        return type, k, b 
 
     def get_exp(self):
         return self.k ,self.b
 
 class Circle(GeoGebraObject):
     def __init__(self, groups, pos, parents, color = pygame.Color("black"), z=DRAW_ORDER['Line']):
-        super().__init__(pos=pos, groups=groups, parents=parents, z=z)
         self.center_parent = parents[0]
         self.radius_parent = parents[1]
+        super().__init__(pos=pos, groups=groups, parents=parents, z=z, name=self.center_parent.name+self.radius_parent.name)
         self.color = color
         self.width = LINE_WIDTH
         self.can_dragged = False
